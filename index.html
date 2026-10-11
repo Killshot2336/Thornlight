@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0a0a0a">
+<title>Thornlight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="splash">
+  <h1 class="brand">THORNLIGHT</h1>
+  <p class="sub">for Kyria</p>
+  <p class="welcome" id="welcome">welcome</p>
+</div>
+
+<div id="app" class="hidden">
+  <div class="tabs" id="tabs">
+    <section class="tab" id="tab-progress"></section>
+    <section class="tab" id="tab-home"></section>
+    <section class="tab" id="tab-lib"></section>
+  </div>
+  <nav class="nav">
+    <button data-i="0">Garden</button>
+    <button data-i="1" class="on">Home</button>
+    <button data-i="2">Library</button>
+  </nav>
+</div>
+
+<div id="author" class="hidden">
+  <div class="author-head">
+    <h1 class="brand small">THORNLIGHT <span>author</span></h1>
+    <button onclick="exitAuthor()">exit</button>
+  </div>
+  <div class="author-tabs">
+    <button data-a="lib" class="on">Library</button>
+    <button data-a="insights">Insights</button>
+    <button data-a="comments">Comments</button>
+  </div>
+  <div id="author-body"></div>
+</div>
+
+<div id="pin" class="hidden">
+  <div class="pin-box">
+    <h2>enter pin</h2>
+    <input id="pin-input" type="tel" maxlength="4" inputmode="numeric" autocomplete="off">
+    <p id="pin-msg"></p>
+  </div>
+</div>
+
+<div id="reader" class="hidden">
+  <div class="prog" id="prog"></div>
+  <button class="close" onclick="closeReader()">✕</button>
+  <div class="page-wrap" id="page-wrap">
+    <div class="page" id="page"></div>
+  </div>
+  <div class="reader-tools">
+    <button onclick="fontSize(-1)">A−</button>
+    <button onclick="fontSize(1)">A+</button>
+    <button onclick="toggleMood()">mood</button>
+    <button onclick="openReview()">review</button>
+    <button onclick="openMarks()">marks</button>
+  </div>
+  <div id="mask" class="mask hidden">👻</div>
+  <div id="defpop" class="defpop hidden"></div>
+  <div id="sheet" class="sheet hidden"></div>
+</div>
+
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
