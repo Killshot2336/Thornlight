@@ -157,9 +157,12 @@ function renderPage(){
   const p = document.getElementById("page");
   p.style.fontSize = fontSizePx + "px";
   let html = (pages[curPage] || "").replace(/&/g,"&amp;").replace(/</g,"&lt;");
-  marks.filter(m => m.target === String(curPage)).forEach(m => {
+  marks.filter(m => m.target === String(curPage) && m.value).forEach(m => {
     const tag = m.type === "highlight" ? `<mark class="hl">$1</mark>` : `<span class="ul">$1</span>`;
-    html = html.replace(new RegExp("(" + escapeRe(m.value) + ")"), tag);
+    const safe = m.value.replace(/[.*+?^${}()|[$$\$$/g, "\\$&");
+    try {
+      html = html.replace(new RegExp("(" + safe + ")"), tag);
+    } catch(e){ /* skip bad match */ }
   });
   p.innerHTML = html;
   p.scrollTop = 0;
