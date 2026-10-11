@@ -1,8 +1,12 @@
+/* ============================================================
+   THORNLIGHT — app.js  (full, fixed)
+   ============================================================ */
+
 let BOOKS = [], XP = 0, READ = {}, BADGES = [], UNLOCKS = [];
 let curTab = 1, curBook = null, curPage = 0, pages = [];
-let fontSizePx = 19, moodOn = true, warmth = 1;
+let fontSizePx = 19, moodOn = true;
 let welcomeTaps = 0, tapTimer = null;
-let marks = [];   // current book's marks
+let marks = [];
 let selText = "", selSpot = "";
 
 const LEVELS = [0,50,150,350,700,1200,2000,3200,5000];
@@ -17,25 +21,33 @@ const UNLOCK_TABLE = [
   {id:"u8", need:10, label:"everything"}
 ];
 const MOODS = {
-  horror:  {bg:"#050505", glow:"rgba(179,0,27,.7)", mask:true},
-  slasher: {bg:"#070606", glow:"rgba(179,0,27,.6)", mask:true},
-  gothic:  {bg:"#0a0808", glow:"rgba(140,20,40,.5)", mask:false},
-  romance: {bg:"#0d0a0a", glow:"rgba(200,80,90,.4)", mask:false},
-  spicy:   {bg:"#0d0606", glow:"rgba(179,0,27,.55)", mask:false},
-  mystery: {bg:"#060708", glow:"rgba(120,140,180,.4)", mask:false},
-  thriller:{bg:"#080607", glow:"rgba(179,0,27,.5)", mask:false},
-  default: {bg:"#0a0a0a", glow:"rgba(179,0,27,.4)", mask:false}
+  horror:  {bg:"#050505", mask:true},
+  slasher: {bg:"#070606", mask:true},
+  gothic:  {bg:"#0a0808", mask:false},
+  romance: {bg:"#0d0a0a", mask:false},
+  spicy:   {bg:"#0d0606", mask:false},
+  mystery: {bg:"#060708", mask:false},
+  thriller:{bg:"#080607", mask:false},
+  default: {bg:"#0a0a0a", mask:false}
 };
 
+/* ---------- helpers ---------- */
+function esc(s){ return String(s||"").replace(/[.*+?^${}()|[$$\$$/g, "\\$&"); }
+function escHTML(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+/* ---------- boot ---------- */
 async function boot(){
-  BOOKS = await sbGet("books", "order=published_at.desc");
-  XP = await getState("xp", 0);
-  READ = await getState("read", {});
-  BADGES = await getState("badges", []);
-  UNLOCKS = await getState("unlocks", []);
+  try {
+    BOOKS = await sbGet("books", "order=published_at.desc");
+    XP = await getState("xp", 0);
+    READ = await getState("read", {});
+    BADGES = await getState("badges", []);
+    UNLOCKS = await getState("unlocks", []);
+  } catch(e){ console.error("boot", e); }
   renderHome(); renderLib(); renderGarden();
 }
 
+/* ---------- splash / pin ---------- */
 document.getElementById("welcome").onclick = () => {
   welcomeTaps++; clearTimeout(tapTimer);
   tapTimer = setTimeout(() => welcomeTaps = 0, 900);
@@ -62,6 +74,7 @@ document.getElementById("pin-input").oninput = e => {
   }
 };
 
+/* ---------- nav ---------- */
 const tabsEl = document.getElementById("tabs");
 document.querySelectorAll(".nav button").forEach(b => b.onclick = () => go(+b.dataset.i));
 function go(i){
@@ -70,21 +83,24 @@ function go(i){
   document.querySelectorAll(".nav button").forEach(b => b.classList.toggle("on", +b.dataset.i === i));
 }
 
+/* ---------- home ---------- */
 function renderHome(){
   const el = document.getElementById("tab-home");
   const resume = Object.entries(READ).sort((a,b)=>b[1].t-a[1].t)[0];
   const rec = BOOKS.filter(b => !READ[b.id]).slice(0,3);
-  el.innerHTML = `<h1 class="page-title">Home</h1>`;
+  let html = `<h1 class="page-title">Home</h1>`;
   if (resume){
     const b = BOOKS.find(x => x.id === resume[0]);
-    if (b) el.innerHTML += `<h2 class="sec">pick up where you left off</h2>` + cardHTML(b);
+    if (b) html += `<h2 class="sec">pick up where you left off</h2>` + cardHTML(b);
   }
-  el.innerHTML += `<h2 class="sec">recommended</h2>` + (rec.length ? rec.map(cardHTML).join("") : `<p class="empty">nothing new yet…</p>`);
+  html += `<h2 class="sec">recommended</h2>` + (rec.length ? rec.map(cardHTML).join("") : `<p class="empty">nothing new yet…</p>`);
+  el.innerHTML = html;
 }
 function cardHTML(b){
   return `<div class="card" onclick="openBook('${b.id}')"><div class="t">${b.title}</div><div class="g">${(b.tags||[]).join(" · ")}</div></div>`;
 }
 
+/* ---------- library ---------- */
 function renderLib(){
   const el = document.getElementById("tab-lib");
   el.innerHTML = `<h1 class="page-title">Library</h1>
@@ -109,8 +125,9 @@ function renderLibList(){
   document.getElementById("lib-list").innerHTML = list.length ? list.map(cardHTML).join("") : `<p class="empty">no books found</p>`;
 }
 
+/* ---------- garden ---------- */
 function level(){ let l=0; for(let i=0;i<LEVELS.length;i++) if(XP>=LEVELS[i]) l=i; return l; }
-function nextAt(){ return LEVELS[Math.min(level()+1, LEVELS.length-1)]; }
+function nextAt(){ return LEVELS[Math.min(level()+1, LEVELS.length-1)] || 1; }
 function renderGarden(){
   const el = document.getElementById("tab-progress");
   const lv = level(), pct = Math.min(100, (XP/nextAt())*100);
@@ -120,7 +137,6 @@ function renderGarden(){
     roses += `<span class="rose on" style="bottom:${20+i*36}px;left:${side}">🌹</span>`;
   }
   const finished = Object.keys(READ).length;
-  const unlocked = UNLOCK_TABLE.filter(u => finished >= u.need);
   el.innerHTML = `<h1 class="page-title">Garden</h1>
     <div class="garden">
       <div class="vine"><div class="stalk" style="height:${Math.min(340, 40+lv*36)}px"></div>${roses}</div>
@@ -134,44 +150,48 @@ function renderGarden(){
     </div>`;
 }
 
+/* ---------- reader ---------- */
 async function openBook(id){
   curBook = BOOKS.find(b => b.id === id);
   if (!curBook) return;
   pages = paginate(curBook.content);
   curPage = (READ[id] && READ[id].page) || 0;
-  marks = await sbGet("events", `book_id=eq.${id}&type=in.(highlight,underline)&order=created_at.asc`);
+  if (curPage >= pages.length) curPage = 0;
+  try {
+    marks = await sbGet("events", `book_id=eq.${id}&type=in.(highlight,underline)&order=created_at.asc`);
+  } catch(e){ marks = []; }
+  if (!Array.isArray(marks)) marks = [];
   document.getElementById("reader").classList.remove("hidden");
   applyMood(); renderPage();
 }
 function paginate(text){
-  const chunks = text.split(/\n\s*\n/).filter(s => s.trim());
+  const chunks = String(text||"").split(/\n\s*\n/).filter(s => s.trim());
   const out = []; let buf = "";
   chunks.forEach(c => {
     if ((buf + c).length > 900){ out.push(buf.trim()); buf = c + "\n\n"; }
     else buf += c + "\n\n";
   });
   if (buf.trim()) out.push(buf.trim());
-  return out.length ? out : [text];
+  return out.length ? out : [String(text||"")];
 }
 function renderPage(){
   const p = document.getElementById("page");
+  if (!p || !pages.length) return;
   p.style.fontSize = fontSizePx + "px";
-  let html = (pages[curPage] || "").replace(/&/g,"&amp;").replace(/</g,"&lt;");
-  marks.filter(m => m.target === String(curPage) && m.value).forEach(m => {
+  let html = escHTML(pages[curPage] || "");
+  marks.filter(m => m && m.target === String(curPage) && m.value).forEach(m => {
     const tag = m.type === "highlight" ? `<mark class="hl">$1</mark>` : `<span class="ul">$1</span>`;
-    const safe = m.value.replace(/[.*+?^${}()|[$$\$$/g, "\\$&");
-    try {
-      html = html.replace(new RegExp("(" + safe + ")"), tag);
-    } catch(e){ /* skip bad match */ }
+    try { html = html.replace(new RegExp("(" + esc(m.value) + ")"), tag); } catch(e){}
   });
   p.innerHTML = html;
   p.scrollTop = 0;
   document.getElementById("prog").style.width = ((curPage+1)/pages.length*100) + "%";
-  READ[curBook.id] = { page: curPage, t: Date.now() };
-  setState("read", READ);
-  addXP(2);
+  if (curBook){
+    READ[curBook.id] = { page: curPage, t: Date.now() };
+    setState("read", READ);
+    addXP(2);
+  }
 }
-function escapeRe(s){ return s.replace(/[.*+?^${}()|[$$\$$/g, "\\$&"); }
 function nextPage(){ if (curPage < pages.length-1){ curPage++; turnPage(); } }
 function prevPage(){ if (curPage > 0){ curPage--; turnPage(); } }
 function turnPage(){
@@ -195,6 +215,7 @@ function finishBook(id){
 function fontSize(d){ fontSizePx = Math.max(15, Math.min(26, fontSizePx + d*2)); renderPage(); }
 function toggleMood(){ moodOn = !moodOn; applyMood(); }
 function applyMood(){
+  if (!curBook) return;
   const tag = (curBook.tags||[])[0] || "default";
   const m = MOODS[tag] || MOODS.default;
   document.getElementById("reader").style.background = moodOn ? m.bg : "#0a0a0a";
@@ -211,7 +232,7 @@ document.addEventListener("pointermove", e => {
   maskEl.style.left = e.clientX + "px"; maskEl.style.top = e.clientY + "px";
 });
 
-// selection → mark / define
+/* ---------- selection → mark ---------- */
 document.getElementById("page").addEventListener("mouseup", captureSel);
 document.getElementById("page").addEventListener("touchend", captureSel);
 function captureSel(){
@@ -224,15 +245,17 @@ function openMarks(){
   const sheet = document.getElementById("sheet");
   sheet.classList.remove("hidden");
   sheet.innerHTML = `<h3>mark</h3>
-    <p style="font-style:italic;color:var(--bone-dim);margin-bottom:12px">"${selText}"</p>
+    <p style="font-style:italic;color:var(--bone-dim);margin-bottom:12px">"${escHTML(selText)}"</p>
     <button class="btn" onclick="addMark('highlight')">highlight</button>
     <button class="btn" onclick="addMark('underline')">underline</button>
     <button class="btn" style="background:#3a0d0d" onclick="eraseAll()">erase all marks</button>
     <button class="btn" style="background:#1a1414" onclick="closeSheet()">close</button>`;
 }
 async function addMark(type){
+  if (!curBook) return;
   await sbPost("events", { book_id: curBook.id, type, target: selSpot, value: selText, spot: selSpot });
   marks = await sbGet("events", `book_id=eq.${curBook.id}&type=in.(highlight,underline)&order=created_at.asc`);
+  if (!Array.isArray(marks)) marks = [];
   closeSheet(); renderPage();
 }
 async function eraseAll(){
@@ -241,7 +264,7 @@ async function eraseAll(){
 }
 function closeSheet(){ document.getElementById("sheet").classList.add("hidden"); }
 
-// review
+/* ---------- review ---------- */
 function openReview(){
   const sheet = document.getElementById("sheet");
   sheet.classList.remove("hidden");
@@ -250,14 +273,14 @@ function openReview(){
     <textarea id="rev-text" placeholder="say something…"></textarea>
     <button class="btn" onclick="saveReview()">save</button>
     <button class="btn" style="background:#1a1414" onclick="closeSheet()">close</button>`;
-  let star = 0;
   document.getElementById("stars").onclick = e => {
     const r = e.target.getBoundingClientRect();
-    star = Math.ceil((e.clientX - r.left) / (r.width/5));
+    const star = Math.ceil((e.clientX - r.left) / (r.width/5));
     document.getElementById("stars").textContent = "★".repeat(star) + "☆".repeat(5-star);
   };
 }
 async function saveReview(){
+  if (!curBook) return;
   const text = document.getElementById("rev-text").value.trim();
   const stars = (document.getElementById("stars").textContent.match(/★/g)||[]).length;
   await sbPost("events", { book_id: curBook.id, type: "review", value: text, spot: String(stars) });
@@ -266,7 +289,7 @@ async function saveReview(){
 
 function addXP(n){ XP += n; setState("xp", XP); if (curTab === 0) renderGarden(); }
 
-// author
+/* ---------- author ---------- */
 function enterAuthor(){
   document.getElementById("pin").classList.add("hidden");
   document.getElementById("author").classList.remove("hidden");
@@ -298,16 +321,17 @@ function renderAuthor(view){
 }
 async function loadComments(){
   const el = document.getElementById("author-body");
-  const evs = await sbGet("events", "type=in.(comment,review)&order=created_at.desc");
+  let evs = [];
+  try { evs = await sbGet("events", "type=in.(comment,review)&order=created_at.desc"); } catch(e){}
+  if (!Array.isArray(evs)) evs = [];
   const grouped = {};
   evs.forEach(e => { const k = (e.book_id||"")+"|"+(e.spot||""); (grouped[k] = grouped[k]||[]).push(e); });
   el.innerHTML = `<h2 class="sec">her words</h2>` + (evs.length ? evs.map(e => {
     const same = grouped[(e.book_id||"")+"|"+(e.spot||"")];
-    const idx = same.indexOf(e) + 1;
-    const num = same.length > 1 ? ` #${idx}` : "";
+    const num = same.length > 1 ? ` #${same.indexOf(e)+1}` : "";
     return `<div class="comment">
       <div class="meta">${e.type}${num} · ${new Date(e.created_at).toLocaleString()}</div>
-      <div>${e.value || ""}</div>
+      <div>${escHTML(e.value||"")}</div>
       ${e.deleted ? `<div class="del">she deleted this · ${new Date(e.deleted_at).toLocaleString()}</div>` : ""}
     </div>`;
   }).join("") : `<p class="empty">nothing yet…</p>`);
@@ -332,9 +356,9 @@ async function publish(){
 function editBook(id){
   const b = BOOKS.find(x => x.id === id);
   document.getElementById("author-body").innerHTML = `
-    <input class="f" id="nb-title" value="${b.title}">
+    <input class="f" id="nb-title" value="${escHTML(b.title)}">
     <div id="nb-tags">${Object.keys(MOODS).filter(m=>m!=="default").map(t => `<span class="chip ${(b.tags||[]).includes(t)?'on':''}" onclick="this.classList.toggle('on')">${t}</span>`).join("")}</div>
-    <textarea id="nb-content">${b.content}</textarea>
+    <textarea id="nb-content">${escHTML(b.content)}</textarea>
     <button class="btn" onclick="saveBook('${id}')">save</button>
     <button class="btn" style="background:#3a0d0d" onclick="deleteBook('${id}')">delete</button>`;
 }
@@ -352,6 +376,7 @@ async function deleteBook(id){
   renderHome(); renderLib(); renderGarden(); renderAuthor("lib");
 }
 
+/* ---------- init ---------- */
 setTimeout(() => {
   document.getElementById("splash").style.opacity = "0";
   setTimeout(() => {
