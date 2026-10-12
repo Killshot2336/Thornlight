@@ -1,5 +1,5 @@
 /* ============================================================
-   THORNLIGHT — app.js  (full, fixed)
+   THORNLIGHT — app.js  (full, cross-device)
    ============================================================ */
 
 let BOOKS = [], XP = 0, READ = {}, BADGES = [], UNLOCKS = [];
@@ -83,7 +83,7 @@ const tabsEl = document.getElementById("tabs");
 document.querySelectorAll(".nav button").forEach(b => b.onclick = () => go(+b.dataset.i));
 function go(i){
   curTab = i;
-  tabsEl.style.transform = `translateX(-${i*100}vw)`;
+  tabsEl.style.transform = `translateX(-${i*33.3333}%)`;
   document.querySelectorAll(".nav button").forEach(b => b.classList.toggle("on", +b.dataset.i === i));
 }
 
@@ -101,7 +101,7 @@ function renderHome(){
   el.innerHTML = html;
 }
 function cardHTML(b){
-  return `<div class="card" onclick="openBook('${b.id}')"><div class="t">${b.title}</div><div class="g">${(b.tags||[]).join(" · ")}</div></div>`;
+  return `<div class="card" onclick="openBook('${b.id}')"><div class="t">${escHTML(b.title)}</div><div class="g">${(b.tags||[]).join(" · ")}</div></div>`;
 }
 
 /* ---------- library ---------- */
@@ -205,6 +205,7 @@ function turnPage(){
 }
 document.getElementById("page-wrap").addEventListener("click", e => {
   if (e.target.closest(".reader-tools") || e.target.closest(".sheet")) return;
+  if (window.getSelection().toString().trim().length > 1) return;
   const x = e.clientX, w = window.innerWidth;
   if (x > w*0.6) nextPage(); else if (x < w*0.4) prevPage();
 });
@@ -309,7 +310,7 @@ function renderAuthor(view){
   if (view === "lib"){
     el.innerHTML = `<button class="btn" onclick="newBook()">+ new book</button>
       <h2 class="sec">published</h2>` +
-      BOOKS.map(b => `<div class="card" onclick="editBook('${b.id}')"><div class="t">${b.title}</div><div class="g">${(b.tags||[]).join(" · ")}</div></div>`).join("");
+      BOOKS.map(b => `<div class="card" onclick="editBook('${b.id}')"><div class="t">${escHTML(b.title)}</div><div class="g">${(b.tags||[]).join(" · ")}</div></div>`).join("");
   }
   if (view === "insights"){
     const opened = Object.keys(READ).length;
