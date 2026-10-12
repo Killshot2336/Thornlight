@@ -32,8 +32,11 @@ const MOODS = {
 };
 
 /* ---------- helpers ---------- */
-function esc(s){ return String(s||"").replace(/[.*+?^${}()|[$$\$$/g, "\\$&"); }
-function escHTML(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+function esc(s){
+  return String(s||"").split("").map(function(c){
+    return "\\^$.*+?()[]{}|".indexOf(c) > -1 ? "\\" + c : c;
+  }).join("");
+}function escHTML(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
 
 /* ---------- boot ---------- */
 async function boot(){
